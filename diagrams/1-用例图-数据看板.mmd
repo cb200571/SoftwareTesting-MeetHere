@@ -1,0 +1,18 @@
+graph TB
+    Admin((管理员))
+
+    subgraph 数据看板功能边界
+        UC1[查看数据看板]
+
+        UC11[查看概览数据]
+        UC12[查看订单状态分布]
+        UC13[查看月度订单趋势]
+        UC14[查看热门场馆排行]
+    end
+
+    Admin --> UC1
+
+    UC1 --> UC11
+    UC1 --> UC12
+    UC1 --> UC13
+    UC1 --> UC14

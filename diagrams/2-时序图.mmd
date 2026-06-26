@@ -1,0 +1,56 @@
+sequenceDiagram
+    actor 管理员
+    participant 浏览器
+    participant Controller as AdminStatisticsController
+    participant DAO as OrderDao/UserDao/VenueDao
+    participant DB as MySQL数据库
+
+    管理员->>浏览器: 1. 点击"数据统计"菜单
+    浏览器->>Controller: 2. GET /statistics_manage
+    Controller-->>浏览器: 3. 返回HTML空壳页面
+
+    浏览器->>Controller: 4. GET /statistics/overview.do
+    Controller->>DAO: 5. countAllOrders()
+    DAO->>DB: SELECT count(*) FROM order
+    DB-->>DAO: 返回订单总数
+    DAO-->>Controller: 返回订单总数
+    Controller->>DAO: 6. sumTotalRevenue()
+    DAO->>DB: SELECT sum(total) WHERE state=3
+    DB-->>DAO: 返回营收
+    DAO-->>Controller: 返回营收
+    Controller->>DAO: 7. countAllUsers()
+    DAO->>DB: SELECT count(*) FROM user
+    DB-->>DAO: 返回用户数
+    DAO-->>Controller: 返回用户数
+    Controller->>DAO: 8. count()
+    DB-->>DAO: 返回场馆数
+    DAO-->>Controller: 返回场馆数
+    Controller->>DAO: 9. countByState(1~4)
+    DAO->>DB: SELECT count(*) WHERE state=1,2,3,4
+    DB-->>DAO: 返回各状态订单数
+    DAO-->>Controller: 返回各状态订单数
+    Controller-->>浏览器: 10. JSON: 8个数字
+    浏览器->>浏览器: 11. 渲染4个数字卡片
+    浏览器->>浏览器: 12. 渲染饼图
+
+    浏览器->>Controller: 13. GET /statistics/monthlyOrders.do
+    Controller->>DAO: 14. countOrdersByMonth()
+    DAO->>DB: SELECT DATE_FORMAT, count(*) GROUP BY month
+    DB-->>DAO: 返回月度数据
+    DAO-->>Controller: 返回月度数据
+    Controller-->>浏览器: 15. JSON: 月份+数量数组
+    浏览器->>浏览器: 16. 渲染折线图
+
+    浏览器->>Controller: 17. GET /statistics/venueRank.do
+    Controller->>DAO: 18. findTopVenues()
+    DAO->>DB: SELECT venueID, count(*) GROUP BY venueID LIMIT 5
+    DB-->>DAO: 返回TOP5场馆ID+数量
+    DAO-->>Controller: 返回TOP5场馆ID+数量
+    Controller->>DAO: 19. getOne(venueID) ×5
+    DAO->>DB: SELECT * FROM venue WHERE venueID=?
+    DB-->>DAO: 返回场馆名称
+    DAO-->>Controller: 返回场馆名称
+    Controller-->>浏览器: 20. JSON: 场馆名+数量数组
+    浏览器->>浏览器: 21. 渲染柱状图
+
+    浏览器-->>管理员: 22. 页面完整展示

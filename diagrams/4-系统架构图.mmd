@@ -1,0 +1,61 @@
+graph TB
+    subgraph 浏览器
+        HTML[Thymeleaf模板<br/>Bootstrap + jQuery + ECharts]
+    end
+
+    subgraph SpringBoot应用
+        subgraph Controller层
+            IC[IndexController]
+            UC[user/ 5个Controller]
+            AC[admin/ 6个Controller]
+            SC[AdminStatisticsController<br/>新增]
+        end
+        subgraph Service层
+            US[UserService]
+            VS[VenueService]
+            OS[OrderService]
+            MS[MessageService]
+            NS[NewsService]
+        end
+        subgraph DAO层
+            UD[UserDao]
+            VD[VenueDao]
+            OD[OrderDao]
+            MD[MessageDao]
+            ND[NewsDao]
+        end
+    end
+
+    subgraph MySQL数据库
+        DB[(meethere_db<br/>5张表)]
+    end
+
+    HTML -->|HTTP/AJAX| IC
+    HTML -->|HTTP/AJAX| UC
+    HTML -->|HTTP/AJAX| AC
+    HTML -->|AJAX/JSON| SC
+    IC --> US
+    IC --> VS
+    UC --> US
+    UC --> VS
+    UC --> OS
+    UC --> MS
+    UC --> NS
+    AC --> US
+    AC --> VS
+    AC --> OS
+    AC --> MS
+    AC --> NS
+    SC -->|直接调用| OD
+    SC -->|直接调用| UD
+    SC -->|直接调用| VD
+    US --> UD
+    VS --> VD
+    OS --> OD
+    MS --> MD
+    NS --> ND
+    UD --> DB
+    VD --> DB
+    OD --> DB
+    MD --> DB
+    ND --> DB

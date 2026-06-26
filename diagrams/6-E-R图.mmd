@@ -1,0 +1,52 @@
+erDiagram
+    USER {
+        int id PK
+        varchar userID
+        varchar user_name
+        varchar password
+        varchar email
+        varchar phone
+        int isadmin
+        varchar picture
+    }
+
+    VENUE {
+        int venueID PK
+        varchar venue_name
+        varchar description
+        int price
+        varchar picture
+        varchar address
+        varchar open_time
+        varchar close_time
+    }
+
+    ORDER {
+        int orderID PK
+        varchar userID FK
+        int venueID FK
+        datetime order_time
+        datetime start_time
+        int hours
+        int state
+        int total
+    }
+
+    MESSAGE {
+        int messageID PK
+        varchar userID FK
+        varchar content
+        datetime time
+        int state
+    }
+
+    NEWS {
+        int newsID PK
+        varchar title
+        varchar content
+        datetime time
+    }
+
+    USER ||--o{ ORDER : "下单"
+    VENUE ||--o{ ORDER : "被预约"
+    USER ||--o{ MESSAGE : "发布"

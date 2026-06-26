@@ -1,0 +1,61 @@
+classDiagram
+    class AdminStatisticsController {
+        -OrderDao orderDao
+        -UserDao userDao
+        -VenueDao venueDao
+        +statistics() String
+        +getOverview() Map~String, Object~
+        +getMonthlyOrders() List~Map~
+        +getVenueRank() List~Map~
+    }
+
+    class OrderDao {
+        &lt;&lt;interface&gt;&gt;
+        +countAllOrders() int
+        +countByState(int) int
+        +sumTotalRevenue() int
+        +countOrdersByMonth() List~Object[]~
+        +findTopVenues() List~Object[]~
+    }
+
+    class UserDao {
+        &lt;&lt;interface&gt;&gt;
+        +countAllUsers() int
+    }
+
+    class VenueDao {
+        &lt;&lt;interface&gt;&gt;
+        +count() int
+        +getOne(int) Venue
+    }
+
+    class Order {
+        -int orderID
+        -String userID
+        -int venueID
+        -int state
+        -LocalDateTime orderTime
+        -LocalDateTime startTime
+        -int hours
+        -int total
+    }
+
+    class User {
+        -int id
+        -String userID
+        -String userName
+        -int isadmin
+    }
+
+    class Venue {
+        -int venueID
+        -String venueName
+        -int price
+    }
+
+    AdminStatisticsController --> OrderDao : @Autowired注入
+    AdminStatisticsController --> UserDao : @Autowired注入
+    AdminStatisticsController --> VenueDao : @Autowired注入
+    OrderDao ..> Order : 操作
+    UserDao ..> User : 操作
+    VenueDao ..> Venue : 操作

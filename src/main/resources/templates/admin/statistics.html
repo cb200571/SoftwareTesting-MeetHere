@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>MeetHere-数据统计</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" th:href="@{/css/bootstrap.css}">
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    <link href="https://cdn.bootcss.com/bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.min.css" rel="stylesheet">
+    <style type="text/css">
+        body { background-color: #f5f5f5; padding-top: 55px; }
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .stat-card h3 { font-size: 32px; margin: 10px 0 5px; }
+        .stat-card p { color: #666; margin: 0; }
+        .chart-box {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .filter-bar {
+            background: white;
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .filter-bar .form-group { margin-bottom: 0; }
+        .filter-bar label { font-size: 13px; color: #666; margin-bottom: 2px; }
+    </style>
+    <script th:src="@{/js/jquery-3.4.1.min.js}"></script>
+    <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+    <script src="https://cdn.bootcss.com/moment.js/2.24.0/moment-with-locales.min.js"></script>
+    <script src="https://cdn.bootcss.com/bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js"></script>
+    <!-- 引入 ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <!-- 左侧菜单，注意 page='statistics_manage' -->
+        <div th:include="layout/left ::
+  left(user=${session.admin},flag=${session.admin}!=null,page='statistics_manage')"></div>
+
+        <main class="col-10 ml-auto px-4 mt-4">
+            <div class="col-12 mb-3 pb-3 border-bottom border-gray">
+                <h2>数据统计</h2>
+            </div>
+
+            <!-- 筛选栏 -->
+            <div class="filter-bar">
+                <div class="row align-items-end">
+                    <div class="col-md-2">
+                        <label>开始日期</label>
+                        <div class="date">
+                            <input type="text" class="form-control form-control-sm" id="startDate" placeholder="选择开始日期">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <label>结束日期</label>
+                        <div class="date">
+                            <input type="text" class="form-control form-control-sm" id="endDate" placeholder="选择结束日期">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <label>场馆</label>
+                        <select class="form-control form-control-sm" id="venueFilter">
+                            <option value="0">全部场馆</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label>订单状态</label>
+                        <select class="form-control form-control-sm" id="stateFilter">
+                            <option value="0">全部状态</option>
+                            <option value="1">待审核</option>
+                            <option value="2">已通过</option>
+                            <option value="3">已完成</option>
+                            <option value="4">已失效</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <label>时间粒度</label>
+                        <select class="form-control form-control-sm" id="granularity">
+                            <option value="month">按月</option>
+                            <option value="week">按周</option>
+                            <option value="day">按天</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-primary btn-sm mr-2" id="btnSearch">
+                            <span class="glyphicon glyphicon-search"></span> 查询
+                        </button>
+                        <button class="btn btn-secondary btn-sm" id="btnReset">
+                            <span class="glyphicon glyphicon-refresh"></span> 重置
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 概览数字卡片 -->
+            <div class="row" id="overview-cards">
+                <!-- JS 动态填充 -->
+            </div>
+
+            <!-- 图表区域 -->
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="chart-box">
+                        <h5>订单状态分布</h5>
+                        <div id="pieChart" style="height:350px;"></div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="chart-box">
+                        <h5 id="lineChartTitle">月度订单趋势</h5>
+                        <div id="lineChart" style="height:350px;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12">
+                    <div class="chart-box">
+                        <h5>热门场馆 TOP5</h5>
+                        <div id="barChart" style="height:350px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div th:include="layout/footer :: Footer"></div>
+        </main>
+    </div>
+</div>
+
+<script>
+    // 初始化 ECharts 实例（全局保存，方便后续更新）
+    var pieChart = echarts.init(document.getElementById('pieChart'));
+    var lineChart = echarts.init(document.getElementById('lineChart'));
+    var barChart = echarts.init(document.getElementById('barChart'));
+
+    // 初始化日期选择器（与项目其他页面保持一致）
+    var startPicker = $('#startDate').datetimepicker({
+        format: 'YYYY-MM-DD',
+        locale: moment.locale('zh-cn')
+    });
+    var endPicker = $('#endDate').datetimepicker({
+        format: 'YYYY-MM-DD',
+        locale: moment.locale('zh-cn'),
+        useCurrent: false
+    });
+    startPicker.on('dp.change', function (e) {
+        endPicker.data('DateTimePicker').minDate(e.date);
+    });
+    endPicker.on('dp.change', function (e) {
+        startPicker.data('DateTimePicker').maxDate(e.date);
+    });
+
+    // 页面加载：获取场馆列表，然后加载全量数据
+    $.get('/statistics/venueList.do', function(venues) {
+        var $sel = $('#venueFilter');
+        venues.forEach(function(v) {
+            $sel.append('<option value="' + v.id + '">' + v.name + '</option>');
+        });
+        // 场馆加载完后，加载默认数据
+        loadAllData();
+    });
+
+    // 收集筛选参数
+    function getFilterParams() {
+        return {
+            startDate: $('#startDate').val() || '1970-01-01',
+            endDate: $('#endDate').val() || '2099-12-31',
+            venueId: $('#venueFilter').val() || '0',
+            state: $('#stateFilter').val() || '0',
+            granularity: $('#granularity').val() || 'month'
+        };
+    }
+
+    // 加载全部数据（概览 + 3 个图表）
+    function loadAllData() {
+        var params = getFilterParams();
+        loadOverview(params);
+        loadPieChart(params);
+        loadLineChart(params);
+        loadBarChart(params);
+    }
+
+    // 加载概览卡片
+    function loadOverview(params) {
+        //// 发起 AJAX GET 请求，params 自动拼到 URL 上
+        $.get('/statistics/overview.do', params, function(data) {
+            var html = '';
+            var cards = [
+                { title: '总订单数', value: data.totalOrders, color: '#3398DB' },
+                { title: '总营收(元)', value: data.totalRevenue, color: '#67C23A' },
+                { title: '总用户数', value: data.totalUsers, color: '#E6A23C' },
+                { title: '总场馆数', value: data.totalVenues, color: '#F56C6C' }
+            ];
+            cards.forEach(function(c) {
+                html += '<div class="col-md-3"><div class="stat-card">'
+                    + '<p>' + c.title + '</p>'
+                    + '<h3 style="color:' + c.color + '">' + c.value + '</h3>'
+                    + '</div></div>';
+            });
+            $('#overview-cards').html(html);
+        });
+    }
+
+    // 加载饼图
+    function loadPieChart(params) {//// 1. 把打包好的params直接当做请求参数发给后端
+        $.get('/statistics/overview.do', params, function(data) {
+            pieChart.setOption({
+                tooltip: { trigger: 'item' },
+                legend: { bottom: 0 },
+                series: [{
+                    type: 'pie',
+                    radius: ['40%', '70%'],
+                    data: [
+                        { value: data.pendingOrders, name: '待审核' },
+                        { value: data.approvedOrders, name: '已通过' },
+                        { value: data.finishedOrders, name: '已完成' },
+                        { value: data.rejectedOrders, name: '已拒绝' }
+                    ]
+                }]
+            });
+        });
+    }
+
+    // 加载折线图
+    function loadLineChart(params) {
+        // 更新标题
+        var titleMap = { month: '月度订单趋势', week: '每周订单趋势', day: '每日订单趋势' };
+        $('#lineChartTitle').text(titleMap[params.granularity] || '月度订单趋势');
+
+        $.get('/statistics/monthlyOrders.do', params, function(data) {
+            var periods = [], counts = [];
+            for (var i = data.length - 1; i >= 0; i--) {
+                periods.push(data[i].month);
+                counts.push(data[i].count);
+            }
+            lineChart.setOption({
+                tooltip: { trigger: 'axis' },
+                xAxis: { type: 'category', data: periods, axisLabel: { rotate: 30 } },
+                yAxis: { type: 'value', minInterval: 1 },
+                series: [{
+                    type: 'line',
+                    data: counts,
+                    smooth: true,
+                    areaStyle: { opacity: 0.3 },
+                    itemStyle: { color: '#3398DB' }
+                }]
+            });
+        });
+    }
+
+    // 加载柱状图
+    function loadBarChart(params) {
+        $.get('/statistics/venueRank.do', params, function(data) {
+            var names = [], counts = [];
+            data.forEach(function(item) {
+                names.push(item.name);
+                counts.push(item.count);
+            });
+            barChart.setOption({
+                tooltip: { trigger: 'axis' },
+                xAxis: { type: 'category', data: names },
+                yAxis: { type: 'value', minInterval: 1 },
+                series: [{ type: 'bar', data: counts, itemStyle: { color: '#67C23A' } }]
+            });
+        });
+    }
+
+    // 查询按钮
+    $('#btnSearch').click(function() {
+        loadAllData();
+    });
+
+    // 重置按钮
+    $('#btnReset').click(function() {
+        $('#startDate').val('');
+        $('#endDate').val('');
+        $('#venueFilter').val('0');
+        $('#stateFilter').val('0');
+        $('#granularity').val('month');
+        loadAllData();
+    });
+
+    // 窗口缩放时，ECharts 自适应
+    $(window).resize(function() {
+        pieChart.resize();
+        lineChart.resize();
+        barChart.resize();
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,87 @@
+sequenceDiagram
+    actor 管理员
+    participant 浏览器 as 浏览器<br/>statistics.html
+    participant SC as AdminStatisticsController
+    participant OD as OrderDao
+    participant UD as UserDao
+    participant VD as VenueDao
+    participant DB as MySQL数据库
+
+    管理员->>浏览器: 1. 点击左侧菜单"数据统计"
+    浏览器->>SC: 2. GET /statistics_manage
+    SC-->>浏览器: 3. 返回HTML空壳页面
+
+    浏览器->>SC: 4. GET /statistics/overview.do
+    SC->>OD: 5. countAllOrders()
+    OD->>DB: SELECT count(*) FROM `order`
+    DB-->>OD: 订单总数
+    OD-->>SC: 返回int
+
+    SC->>OD: 6. sumTotalRevenue()
+    OD->>DB: SELECT IFNULL(sum(total),0) FROM `order` WHERE state=3
+    DB-->>OD: 总营收
+    OD-->>SC: 返回int
+
+    SC->>UD: 7. countAllUsers()
+    UD->>DB: SELECT count(*) FROM user
+    DB-->>OD: 用户总数
+    UD-->>SC: 返回int
+
+    SC->>VD: 8. count()
+    VD-->>SC: 场馆总数
+
+    SC->>OD: 9. countByState(1)
+    OD->>DB: SELECT count(*) FROM `order` WHERE state=1
+    DB-->>OD: 待审核数
+    OD-->>SC: 返回int
+
+    SC->>OD: 10. countByState(2)
+    OD->>DB: SELECT count(*) FROM `order` WHERE state=2
+    DB-->>OD: 已通过数
+    OD-->>SC: 返回int
+
+    SC->>OD: 11. countByState(3)
+    OD->>DB: SELECT count(*) FROM `order` WHERE state=3
+    DB-->>OD: 已完成数
+    OD-->>SC: 返回int
+
+    SC->>OD: 12. countByState(4)
+    OD->>DB: SELECT count(*) FROM `order` WHERE state=4
+    DB-->>OD: 已拒绝数
+    OD-->>SC: 返回int
+
+    SC-->>浏览器: 13. JSON: 8个数字
+    浏览器->>浏览器: 14. 渲染4个数字卡片
+    浏览器->>浏览器: 15. 渲染饼图
+
+    浏览器->>SC: 16. GET /statistics/monthlyOrders.do
+    SC->>OD: 17. countOrdersByMonth()
+    OD->>DB: SELECT DATE_FORMAT(order_time,'%Y-%m'), count(*) GROUP BY month ORDER BY month DESC LIMIT 6
+    DB-->>OD: 月度数据数组
+    OD-->>SC: 返回List
+
+    loop 遍历每一行
+        SC->>SC: Object[]转Map: month, count
+    end
+
+    SC-->>浏览器: 18. JSON: [{month,count},...]
+    浏览器->>浏览器: 19. 渲染折线图
+
+    浏览器->>SC: 20. GET /statistics/venueRank.do
+    SC->>OD: 21. findTopVenues()
+    OD->>DB: SELECT venueID, count(*) GROUP BY venueID ORDER BY cnt DESC LIMIT 5
+    DB-->>OD: TOP5场馆ID+数量
+    OD-->>SC: 返回List
+
+    loop 遍历TOP5场馆
+        SC->>VD: 22. getOne(venueID)
+        VD->>DB: SELECT * FROM venue WHERE venueID=?
+        DB-->>VD: Venue对象
+        VD-->>SC: 返回Venue
+        SC->>SC: 组装Map: name, count
+    end
+
+    SC-->>浏览器: 23. JSON: [{name,count},...]
+    浏览器->>浏览器: 24. 渲染柱状图
+
+    浏览器-->>管理员: 25. 页面完整展示

@@ -1,0 +1,70 @@
+sequenceDiagram
+    actor 用户
+    participant OC as OrderController
+    participant OS as OrderServiceImpl
+    participant OD as OrderDao
+    participant VD as VenueDao
+    participant DB as MySQL
+    actor 管理员
+    participant AOC as AdminOrderController
+
+    用户->>OC: 1. GET /order_place.do?venueID=X
+    OC->>VD: 2. findByVenueID(venueID)
+    VD->>DB: 3. SELECT * FROM venue WHERE venueID=?
+    DB-->>VD: 4. 返回Venue对象
+    VD-->>OC: 5. 返回Venue对象
+    OC-->>用户: 6. 返回下单页面(order_place.html)
+
+    用户->>OC: 7. POST /addOrder.do (场馆名,日期,时长)
+    OC->>OC: 8. 解析日期字符串为LocalDateTime
+    OC->>OC: 9. 从Session获取登录用户
+    alt 未登录
+        OC-->>用户: 抛出LoginException
+    end
+    OC->>OS: 10. submit(venueName, ldt, hours, userID)
+    OS->>VD: 11. findByVenueName(venueName)
+    VD->>DB: 12. SELECT * FROM venue WHERE venue_name=?
+    DB-->>VD: 13. 返回Venue对象
+    VD-->>OS: 14. 返回Venue对象
+    OS->>OS: 15. 创建Order对象(state=1, total=hours*price)
+    OS->>OD: 16. save(order)
+    OD->>DB: 17. INSERT INTO order ...
+    DB-->>OD: 18. 保存成功
+    OD-->>OS: 19. 返回保存的Order
+    OS-->>OC: 20. 返回
+    OC-->>用户: 21. 重定向到order_manage
+
+    管理员->>AOC: 22. GET /admin/getOrderList.do
+    AOC->>OS: 23. findNoAuditOrder(pageable)
+    OS->>OD: 24. findAllByState(1, pageable)
+    OD->>DB: 25. SELECT * FROM order WHERE state=1
+    DB-->>OD: 26. 返回待审核订单列表
+    OD-->>OS: 27. 返回Page Order
+    OS-->>AOC: 28. 返回Page Order
+    AOC-->>管理员: 29. 返回待审核订单JSON
+
+    管理员->>AOC: 30. POST /passOrder.do?orderID=X
+    AOC->>OS: 31. confirmOrder(orderID)
+    OS->>OD: 32. findByOrderID(orderID)
+    OD->>DB: 33. SELECT * FROM order WHERE orderID=?
+    DB-->>OD: 34. 返回Order对象
+    OD-->>OS: 35. 返回Order对象
+    OS->>OD: 36. updateState(2, orderID)
+    OD->>DB: 37. UPDATE order SET state=2 WHERE orderID=?
+    DB-->>OD: 38. 更新成功
+    OD-->>OS: 39. 返回
+    OS-->>AOC: 40. 返回
+    AOC-->>管理员: 41. 返回true
+
+    用户->>OC: 42. POST /finishOrder.do?orderID=X
+    OC->>OS: 43. finishOrder(orderID)
+    OS->>OD: 44. findByOrderID(orderID)
+    OD->>DB: 45. SELECT * FROM order WHERE orderID=?
+    DB-->>OD: 46. 返回Order对象
+    OD-->>OS: 47. 返回Order对象
+    OS->>OD: 48. updateState(3, orderID)
+    OD->>DB: 49. UPDATE order SET state=3 WHERE orderID=?
+    DB-->>OD: 50. 更新成功
+    OD-->>OS: 51. 返回
+    OS-->>OC: 52. 返回
+    OC-->>用户: 53. 返回void

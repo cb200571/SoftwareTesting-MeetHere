@@ -1,0 +1,46 @@
+classDiagram
+    class AdminStatisticsController {
+        -OrderDao orderDao
+        -UserDao userDao
+        -VenueDao venueDao
+        +statistics() String
+        +getOverview() Map
+        +getMonthlyOrders() List
+        +getVenueRank() List
+    }
+
+    class OrderDao {
+        &lt;&lt;interface&gt;&gt;
+        +findByOrderID(int) Order
+        +findAllByState(int, Pageable) Page
+        +findAudit(int, int) List
+        +findAllByUserID(String, Pageable) Page
+        +updateState(int, int) void
+        +countAllOrders() int 新增
+        +countByState(int) int 新增
+        +sumTotalRevenue() int 新增
+        +countOrdersByMonth() List 新增
+        +findTopVenues() List 新增
+    }
+
+    class UserDao {
+        &lt;&lt;interface&gt;&gt;
+        +findByUserIDAndPassword(String, String) User
+        +findByUserID(String) User
+        +findAllByIsadmin(int, Pageable) Page
+        +countByUserID(String) int
+        +countAllUsers() int 新增
+    }
+
+    class VenueDao {
+        &lt;&lt;interface&gt;&gt;
+        +findByVenueID(int) Venue
+        +findByVenueName(String) Venue
+        +findAll() List
+        +count() int
+        +getOne(int) Venue
+    }
+
+    AdminStatisticsController --> OrderDao : 调用
+    AdminStatisticsController --> UserDao : 调用
+    AdminStatisticsController --> VenueDao : 调用

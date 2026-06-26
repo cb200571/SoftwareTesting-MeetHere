@@ -1,0 +1,31 @@
+graph TB
+    subgraph statistics.html
+        subgraph 顶部导航栏
+            NAV[layout/header.html]
+        end
+        subgraph 左侧菜单
+            LEFT[layout/left.html<br/>新增数据统计菜单项]
+        end
+        subgraph 主内容区
+            subgraph 概览卡片
+                C1[总订单数]
+                C2[总营收]
+                C3[总用户数]
+                C4[总场馆数]
+            end
+            subgraph 图表区域
+                PIE[订单状态饼图]
+                LINE[月度趋势折线图]
+                BAR[热门场馆柱状图]
+            end
+            FOOTER[layout/footer.html]
+        end
+    end
+
+    AJAX1[AJAX: /statistics/overview.do] --> C1
+    AJAX1 --> C2
+    AJAX1 --> C3
+    AJAX1 --> C4
+    AJAX1 --> PIE
+    AJAX2[AJAX: /statistics/monthlyOrders.do] --> LINE
+    AJAX3[AJAX: /statistics/venueRank.do] --> BAR

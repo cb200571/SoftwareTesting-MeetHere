@@ -1,0 +1,67 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+' 实体类（加下划线）
+class "__Order__" as Order {
+    - orderID : int
+    - userID : String
+    - venueID : int
+    - state : int
+    - orderTime : LocalDateTime
+    - startTime : LocalDateTime
+    - hours : int
+    - total : int
+}
+
+class "__User__" as User {
+    - id : int
+    - userID : String
+    - userName : String
+    - isadmin : int
+}
+
+class "__Venue__" as Venue {
+    - venueID : int
+    - venueName : String
+    - price : int
+    - address : String
+}
+
+' Controller
+class "数据看板控制器" as AdminStatisticsController {
+    - orderDao : OrderDao
+    - userDao : UserDao
+    - venueDao : VenueDao
+    + statistics() : String
+    + getOverview() : Map
+    + getMonthlyOrders() : List
+    + getVenueRank() : List
+}
+
+' DAO接口
+interface "订单数据访问" as OrderDao {
+    + {abstract} countAllOrders() : int
+    + {abstract} countByState(int) : int
+    + {abstract} sumTotalRevenue() : int
+    + {abstract} countOrdersByMonth() : List
+    + {abstract} findTopVenues() : List
+}
+
+interface "用户数据访问" as UserDao {
+    + {abstract} countAllUsers() : int
+}
+
+interface "场馆数据访问" as VenueDao {
+    + {abstract} count() : int
+    + {abstract} getOne(int) : Venue
+}
+
+' 关系
+AdminStatisticsController --> OrderDao : 依赖注入
+AdminStatisticsController --> UserDao : 依赖注入
+AdminStatisticsController --> VenueDao : 依赖注入
+
+OrderDao ..> Order : 操作
+UserDao ..> User : 操作
+VenueDao ..> Venue : 操作
+@enduml

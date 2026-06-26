@@ -1,0 +1,34 @@
+graph TB
+    User((普通用户))
+    Admin((管理员))
+
+    subgraph 场馆预约功能
+        UC1[预约场馆]
+        UC2[查看我的订单]
+        UC3[修改订单]
+        UC4[删除订单]
+        UC5[完成订单]
+        UC6[查看场馆可用性]
+
+        UC7[审核订单]
+        UC8[通过订单]
+        UC9[拒绝订单]
+        UC10[查看待审核订单]
+        UC11[查看已审核订单]
+    end
+
+    User --> UC1
+    User --> UC2
+    User --> UC3
+    User --> UC4
+    User --> UC5
+    User --> UC6
+
+    Admin --> UC7
+    Admin --> UC10
+    Admin --> UC11
+
+    UC7 --> UC8
+    UC7 --> UC9
+
+    UC1 -.->|include| UC6

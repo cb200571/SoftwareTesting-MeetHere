@@ -1,0 +1,88 @@
+@startuml
+actor "管理员" as Admin
+participant "statistics.html" as Page
+participant "AdminStatistics\nController" as SC
+participant "OrderDao" as OD
+participant "UserDao" as UD
+participant "VenueDao" as VD
+database "MySQL" as DB
+
+Admin -> Page : 1. 点击"数据统计"菜单
+activate Page
+Page -> SC : 2. GET /statistics_manage
+activate SC
+SC --> Page : 3. 返回HTML空壳页面
+deactivate SC
+
+Page -> SC : 4. GET /statistics/overview.do
+activate SC
+SC -> OD : 5. 查询订单总数和各状态数量
+activate OD
+OD -> DB : SELECT count(*), sum(total), countByState
+activate DB
+DB --> OD : 返回订单统计数据
+deactivate DB
+OD --> SC : 返回int
+deactivate OD
+
+SC -> UD : 6. 查询用户总数
+activate UD
+UD -> DB : SELECT count(*) FROM user
+activate DB
+DB --> UD : 返回用户数
+deactivate DB
+UD --> SC : 返回int
+deactivate UD
+
+SC -> VD : 7. 查询场馆总数
+activate VD
+VD --> SC : 返回int
+deactivate VD
+
+SC --> Page : 8. JSON: 概览数据+状态分布
+deactivate SC
+Page -> Page : 9. 渲染数字卡片和饼图
+
+Page -> SC : 10. GET /statistics/monthlyOrders.do
+activate SC
+SC -> OD : 11. 按月分组统计订单数
+activate OD
+OD -> DB : SELECT DATE_FORMAT, count(*) GROUP BY month
+activate DB
+DB --> OD : 返回月度数据
+deactivate DB
+OD --> SC : 返回List
+deactivate OD
+SC --> Page : 12. JSON: 月份+数量
+deactivate SC
+Page -> Page : 13. 渲染折线图
+
+Page -> SC : 14. GET /statistics/venueRank.do
+activate SC
+SC -> OD : 15. 统计TOP5场馆订单数
+activate OD
+OD -> DB : SELECT venueID, count(*) GROUP BY venueID LIMIT 5
+activate DB
+DB --> OD : 返回场馆ID+数量
+deactivate DB
+OD --> SC : 返回List
+deactivate OD
+
+loop 5个场馆
+    SC -> VD : 16. 根据venueID查场馆名
+    activate VD
+    VD -> DB : SELECT * FROM venue WHERE venueID=?
+    activate DB
+    DB --> VD : 返回Venue
+    deactivate DB
+    VD --> SC : 返回场馆名
+    deactivate VD
+end
+
+SC --> Page : 17. JSON: 场馆名+数量
+deactivate SC
+Page -> Page : 18. 渲染柱状图
+deactivate Page
+
+Page --> Admin : 19. 页面完整展示
+@enduml

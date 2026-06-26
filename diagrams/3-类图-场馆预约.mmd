@@ -1,0 +1,158 @@
+classDiagram
+    class Order {
+        -int orderID
+        -String userID
+        -int venueID
+        -int state
+        -LocalDateTime orderTime
+        -LocalDateTime startTime
+        -int hours
+        -int total
+        +getOrderID() int
+        +getUserID() String
+        +getVenueID() int
+        +getState() int
+        +setState(int) void
+        +getOrderTime() LocalDateTime
+        +setOrderTime(LocalDateTime) void
+        +getStartTime() LocalDateTime
+        +setStartTime(LocalDateTime) void
+        +getHours() int
+        +setHours(int) void
+        +getTotal() int
+        +setTotal(int) void
+    }
+
+    class Venue {
+        -int venueID
+        -String venueName
+        -String description
+        -int price
+        -String picture
+        -String address
+        -String open_time
+        -String close_time
+        +getVenueID() int
+        +getVenueName() String
+        +getPrice() int
+    }
+
+    class User {
+        -int id
+        -String userID
+        -String userName
+        -String password
+        -String email
+        -String phone
+        -int isadmin
+        -String picture
+        +getUserID() String
+        +getIsadmin() int
+    }
+
+    class OrderVo {
+        -int orderID
+        -String userID
+        -int venueID
+        -String venueName
+        -int state
+        -LocalDateTime orderTime
+        -LocalDateTime startTime
+        -int hours
+        -int total
+    }
+
+    class VenueOrder {
+        -Venue venue
+        -List~Order~ orders
+        +setVenue(Venue) void
+        +setOrders(List~Order~) void
+    }
+
+    class OrderController {
+        -OrderService orderService
+        -OrderVoService orderVoService
+        -VenueService venueService
+        +order_manage(Model, HttpServletRequest) String
+        +order_place(Model, int) String
+        +order_list(int, HttpServletRequest) List~OrderVo~
+        +addOrder(String, String, String, int, HttpServletRequest, HttpServletResponse) void
+        +finishOrder(int) void
+        +editOrder(Model, int) String
+        +modifyOrder(String, String, String, int, int, HttpServletRequest, HttpServletResponse) boolean
+        +delOrder(int) boolean
+        +getOrder(String, String) VenueOrder
+    }
+
+    class AdminOrderController {
+        -OrderService orderService
+        -OrderVoService orderVoService
+        +reservation_manage(Model) String
+        +getNoAuditOrder(int) List~OrderVo~
+        +confirmOrder(int) boolean
+        +rejectOrder(int) boolean
+    }
+
+    class OrderService {
+        <<interface>>
+        +findById(int) Order
+        +findNoAuditOrder(Pageable) Page~Order~
+        +findAuditOrder() List~Order~
+        +findDateOrder(int, LocalDateTime, LocalDateTime) List~Order~
+        +findUserOrder(String, Pageable) Page~Order~
+        +updateOrder(int, String, LocalDateTime, int, String) void
+        +submit(String, LocalDateTime, int, String) void
+        +delOrder(int) void
+        +confirmOrder(int) void
+        +finishOrder(int) void
+        +rejectOrder(int) void
+    }
+
+    class OrderServiceImpl {
+        -OrderDao orderDao
+        -VenueDao venueDao
+        +findById(int) Order
+        +submit(String, LocalDateTime, int, String) void
+        +confirmOrder(int) void
+        +finishOrder(int) void
+        +rejectOrder(int) void
+        +delOrder(int) void
+        +updateOrder(int, String, LocalDateTime, int, String) void
+    }
+
+    class OrderDao {
+        <<interface>>
+        +findByOrderID(int) Order
+        +findAllByState(int, Pageable) Page~Order~
+        +findByVenueIDAndStartTimeIsBetween(int, LocalDateTime, LocalDateTime) List~Order~
+        +findAudit(int, int) List~Order~
+        +findAllByUserID(String, Pageable) Page~Order~
+        +updateState(int, int) void
+        +save(Order) Order
+        +deleteById(int) void
+    }
+
+    class VenueDao {
+        <<interface>>
+        +findByVenueID(int) Venue
+        +findByVenueName(String) Venue
+        +save(Venue) Venue
+    }
+
+    class OrderVoService {
+        <<interface>>
+        +returnOrderVoByOrderID(int) OrderVo
+        +returnVo(List~Order~) List~OrderVo~
+    }
+
+    OrderController --> OrderService : 调用
+    OrderController --> OrderVoService : 调用
+    OrderController --> VenueService : 调用
+    AdminOrderController --> OrderService : 调用
+    AdminOrderController --> OrderVoService : 调用
+    OrderServiceImpl ..|> OrderService : 实现
+    OrderServiceImpl --> OrderDao : 调用
+    OrderServiceImpl --> VenueDao : 调用
+    OrderVo ..> Order : 依赖(转换自)
+    VenueOrder o-- Order : 包含订单列表
+    VenueOrder o-- Venue : 包含场馆信息
